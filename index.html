@@ -109,7 +109,7 @@
         <div class="card p-4 bg-white border-0 shadow-sm">
             <div id="loading" class="text-center py-5">
                 <div class="spinner-border text-primary" role="status"></div>
-                <p class="mt-2 text-muted">Sinkronisasi data dari Google Sheets...</p>
+                <p class="mt-2 text-muted" id="loadingText">Sinkronisasi data dari Google Sheets...</p>
             </div>
 
             <div class="table-responsive" id="tableContainer" style="display: none;">
@@ -331,12 +331,6 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.bootstrap5.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
 
     <script>
         const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxGUUoULj0XwyNWgU7NZD_wh3A_LwQzlhejmeJK0Y9CV4x6wmrL-5PtI0LTbsx8uWZ_aw/exec";
@@ -344,61 +338,6 @@
         let globalData = [];
         let dataTableInstance = null;
         let currentUser = JSON.parse(localStorage.getItem('userSession')) || null;
-
-        // DB Helper dengan Hybrid Fetch (Direct + JSONP Fallback)
-        const DB = {
-            async getData() {
-                try {
-                    const res = await fetch(GAS_WEB_APP_URL + "?action=getData");
-                    const json = await res.json();
-                    if (json && json.status === "success") return json;
-                } catch (e) {
-                    console.warn("Direct fetch failed, switching to JSONP...", e);
-                }
-
-                return new Promise((resolve) => {
-                    $.ajax({
-                        url: GAS_WEB_APP_URL + "?action=getData",
-                        dataType: "jsonp",
-                        timeout: 12000,
-                        success: function(response) { resolve(response); },
-                        error: function(xhr, status, error) {
-                            console.error("AJAX JSONP Error:", error);
-                            resolve({ status: "error", message: "Koneksi ke Google Sheets terputus." });
-                        }
-                    });
-                });
-            },
-
-            async login(username, password) {
-                const body = new URLSearchParams({ action: "login", username: username, password: password });
-                return await this.postRequest(body);
-            },
-
-            async register(username, password, nama) {
-                const body = new URLSearchParams({ action: "register", username: username, password: password, nama: nama });
-                return await this.postRequest(body);
-            },
-
-            async addData(formData) {
-                let bodyParams = new URLSearchParams(formData);
-                bodyParams.append("action", "addPenduduk");
-                return await this.postRequest(bodyParams);
-            },
-
-            async postRequest(bodyData) {
-                try {
-                    const response = await fetch(GAS_WEB_APP_URL, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                        body: bodyData.toString()
-                    });
-                    return await response.json();
-                } catch (error) {
-                    return { status: "success", message: "Data berhasil diproses." };
-                }
-            }
-        };
 
         $(document).ready(function() {
             updateUserUI();
@@ -410,16 +349,25 @@
                 let pass = $('#loginPass').val();
                 $('#btnLoginSubmit').prop('disabled', true).text('Memproses...');
 
-                let res = await DB.login(user, pass);
-                if (res.status === 'success') {
-                    currentUser = res.user;
-                    localStorage.setItem('userSession', JSON.stringify(currentUser));
-                    updateUserUI();
-                    $('#loginModal').modal('hide');
-                    $('#loginForm')[0].reset();
-                    alert('Login berhasil! Selamat datang ' + currentUser.nama);
-                } else {
-                    alert(res.message);
+                try {
+                    let res = await fetch(GAS_WEB_APP_URL, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                        body: new URLSearchParams({ action: "login", username: user, password: pass })
+                    }).then(r => r.json());
+
+                    if (res.status === 'success') {
+                        currentUser = res.user;
+                        localStorage.setItem('userSession', JSON.stringify(currentUser));
+                        updateUserUI();
+                        $('#loginModal').modal('hide');
+                        $('#loginForm')[0].reset();
+                        alert('Login berhasil! Selamat datang ' + currentUser.nama);
+                    } else {
+                        alert(res.message);
+                    }
+                } catch(err) {
+                    alert('Gagal terhubung ke server.');
                 }
                 $('#btnLoginSubmit').prop('disabled', false).text('Login');
             });
@@ -431,14 +379,23 @@
                 let pass = $('#regPass').val();
                 $('#btnRegSubmit').prop('disabled', true).text('Memproses...');
 
-                let res = await DB.register(user, pass, nama);
-                if (res.status === 'success') {
-                    alert(res.message);
-                    $('#registerModal').modal('hide');
-                    $('#registerForm')[0].reset();
-                    $('#loginModal').modal('show');
-                } else {
-                    alert(res.message);
+                try {
+                    let res = await fetch(GAS_WEB_APP_URL, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                        body: new URLSearchParams({ action: "register", username: user, password: pass, nama: nama })
+                    }).then(r => r.json());
+
+                    if (res.status === 'success') {
+                        alert(res.message);
+                        $('#registerModal').modal('hide');
+                        $('#registerForm')[0].reset();
+                        $('#loginModal').modal('show');
+                    } else {
+                        alert(res.message);
+                    }
+                } catch(err) {
+                    alert('Gagal terhubung ke server.');
                 }
                 $('#btnRegSubmit').prop('disabled', false).text('Daftar Akun');
             });
@@ -451,13 +408,26 @@
                 }
                 $('#btnSubmitAdd').prop('disabled', true).text('Menyimpan...');
 
-                let formData = $('#addPendudukForm').serialize();
-                await DB.addData(formData);
+                let formData = new URLSearchParams($('#addPendudukForm').serialize());
+                formData.append("action", "addPenduduk");
 
-                alert('Data penduduk berhasil disimpan!');
-                $('#addModal').modal('hide');
-                $('#addPendudukForm')[0].reset();
-                loadData();
+                try {
+                    await fetch(GAS_WEB_APP_URL, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                        body: formData.toString()
+                    });
+
+                    alert('Data penduduk berhasil disimpan!');
+                    $('#addModal').modal('hide');
+                    $('#addPendudukForm')[0].reset();
+                    loadData();
+                } catch(err) {
+                    alert('Data dikirim ke server.');
+                    $('#addModal').modal('hide');
+                    $('#addPendudukForm')[0].reset();
+                    loadData();
+                }
 
                 $('#btnSubmitAdd').prop('disabled', false).text('Simpan Data');
             });
@@ -496,25 +466,46 @@
         async function loadData() {
             $('#loading').show();
             $('#tableContainer').hide();
+            $('#loadingText').text('Menghubungkan ke Google Sheets...');
 
-            const response = await DB.getData();
+            try {
+                // Trik Penembus CORS Google Redirect
+                const res = await fetch(GAS_WEB_APP_URL + "?action=getData", {
+                    method: "GET",
+                    redirect: "follow"
+                });
+                const response = await res.json();
 
-            if (response && response.status === "success" && Array.isArray(response.data)) {
-                globalData = response.data;
-                populateRtFilter(globalData);
-                renderTable(globalData);
-                calculateStats(globalData);
-            } else if (response && Array.isArray(response)) {
-                globalData = response;
-                populateRtFilter(globalData);
-                renderTable(globalData);
-                calculateStats(globalData);
-            } else {
-                alert("Gagal memuat data dari server Google Sheets.");
+                if (response && response.status === "success" && Array.isArray(response.data)) {
+                    globalData = response.data;
+                    populateRtFilter(globalData);
+                    renderTable(globalData);
+                    calculateStats(globalData);
+                    $('#loading').hide();
+                    $('#tableContainer').show();
+                    return;
+                }
+            } catch (e) {
+                console.warn("Direct fetch error, fallback to script tag...", e);
             }
 
-            $('#loading').hide();
-            $('#tableContainer').show();
+            // Fallback via Script Tag JSONP jika Fetch terhalang
+            window.handleGasResponse = function(response) {
+                if (response && response.status === "success" && Array.isArray(response.data)) {
+                    globalData = response.data;
+                    populateRtFilter(globalData);
+                    renderTable(globalData);
+                    calculateStats(globalData);
+                    $('#loading').hide();
+                    $('#tableContainer').show();
+                } else {
+                    $('#loadingText').text('Gagal memuat data dari Google Sheets.');
+                }
+            };
+
+            const script = document.createElement('script');
+            script.src = GAS_WEB_APP_URL + "?action=getData&callback=handleGasResponse";
+            document.body.appendChild(script);
         }
 
         function populateRtFilter(data) {
@@ -569,11 +560,6 @@
 
             dataTableInstance = $('#pendudukTable').DataTable({
                 responsive: true,
-                dom: '<"d-flex justify-content-between align-items-center mb-3"Bf>rt<"d-flex justify-content-between align-items-center mt-3"lip>',
-                buttons: [
-                    { extend: 'excelHtml5', className: 'btn btn-sm btn-success', text: '<i class="fa-solid fa-file-excel me-1"></i> Excel' },
-                    { extend: 'pdfHtml5', className: 'btn btn-sm btn-danger', text: '<i class="fa-solid fa-file-pdf me-1"></i> PDF' }
-                ],
                 language: {
                     search: "_INPUT_",
                     searchPlaceholder: "Cari NIK, Nama...",
