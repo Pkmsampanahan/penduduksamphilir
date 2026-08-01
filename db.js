@@ -1,4 +1,4 @@
-const GAS_WEB_APP_URL = "GANTI_DENGAN_URL_WEB_APP_GAS_ANDA";
+const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzl4pNhd6oBLvb8VS0JHSw77qNd_hXQCFdRrUSBe0iZnn2sVKYsbdgeHgFcDGRx-0wO/exec";
 
 const DB = {
     async getData() {
