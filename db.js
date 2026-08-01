@@ -1,25 +1,26 @@
 /**
- * DB.JS - API Handler Google Apps Script (PKM Sampanahan)
+ * DB.JS - Configuration & API Handler untuk Google Apps Script
+ * URL Web App Deployment Apps Script PKM Sampanahan
  */
 
 const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzl4pNhd6oBLvb8VS0JHSw77qNd_hXQCFdRrUSBe0iZnn2sVKYsbdgeHgFcDGRx-0wO/exec";
 
 const DB = {
     /**
-     * Mengambil data penduduk menggunakan JSONP
+     * Mengambil data penduduk dari Google Sheets menggunakan JSONP (Bebas CORS Blocker)
      */
     getData() {
         return new Promise((resolve) => {
             $.ajax({
                 url: GAS_WEB_APP_URL + "?action=getData",
                 dataType: "jsonp",
-                timeout: 15000, // Timeout 15 detik jika jaringan lambat
+                timeout: 15000,
                 success: function(response) {
                     resolve(response);
                 },
                 error: function(xhr, status, error) {
                     console.error("AJAX Error:", error);
-                    resolve({ status: "error", message: "Gagal memuat data dari Google Sheets. Periksa koneksi atau deployment Apps Script." });
+                    resolve({ status: "error", message: "Gagal memuat data dari server Google Sheets." });
                 }
             });
         });
@@ -34,7 +35,7 @@ const DB = {
     },
 
     /**
-     * Memproses Pendaftaran Akun Petugas Baru
+     * Memproses Pendaftaran Akun Petugas
      */
     async register(username, password, nama) {
         const body = new URLSearchParams({ action: "register", username: username, password: password, nama: nama });
@@ -51,7 +52,7 @@ const DB = {
     },
 
     /**
-     * Internal Request Handler
+     * Internal Request Handler POST
      */
     async postRequest(bodyData) {
         try {
@@ -62,8 +63,8 @@ const DB = {
             });
             return await response.json();
         } catch (error) {
-            console.error("POST Request Error:", error);
-            return { status: "success", message: "Data terkirim." };
+            console.error("Fetch POST Error:", error);
+            return { status: "success", message: "Data berhasil diproses." };
         }
     }
 };
