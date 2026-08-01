@@ -340,15 +340,15 @@
 
     <script>
         // -------------------------------------------------------------------
-        // CONFIGURATION: URL WEB APP GOOGLE APPS SCRIPT ANDA
+        // URL DEPLOYMENT GOOGLE APPS SCRIPT BARU
         // -------------------------------------------------------------------
-        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzl4pNhd6oBLvb8VS0JHSw77qNd_hXQCFdRrUSBe0iZnn2sVKYsbdgeHgFcDGRx-0wO/exec";
+        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxGUUoULj0XwyNWgU7NZD_wh3A_LwQzlhejmeJK0Y9CV4x6wmrL-5PtI0LTbsx8uWZ_aw/exec";
 
         let globalData = [];
         let dataTableInstance = null;
         let currentUser = JSON.parse(localStorage.getItem('userSession')) || null;
 
-        // DB Helper Module
+        // API Connector
         const DB = {
             getData() {
                 return new Promise((resolve) => {
