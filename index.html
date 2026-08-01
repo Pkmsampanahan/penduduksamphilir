@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem Informasi Data Penduduk 2026</title>
     
-    <!-- CSS Dependencies -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css" rel="stylesheet">
@@ -350,7 +349,6 @@
             updateUserUI();
             loadData();
 
-            // Submit Form Login
             $('#loginForm').on('submit', async function(e) {
                 e.preventDefault();
                 let user = $('#loginUser').val();
@@ -371,7 +369,6 @@
                 $('#btnLoginSubmit').prop('disabled', false).text('Login');
             });
 
-            // Submit Form Register
             $('#registerForm').on('submit', async function(e) {
                 e.preventDefault();
                 let nama = $('#regNama').val();
@@ -391,7 +388,6 @@
                 $('#btnRegSubmit').prop('disabled', false).text('Daftar Akun');
             });
 
-            // Submit Form Tambah Penduduk
             $('#addPendudukForm').on('submit', async function(e) {
                 e.preventDefault();
                 if (!currentUser) {
@@ -448,13 +444,18 @@
 
             const response = await DB.getData();
 
-            if (response.status === "success") {
+            if (response && response.status === "success" && Array.isArray(response.data)) {
                 globalData = response.data;
                 populateRtFilter(globalData);
                 renderTable(globalData);
                 calculateStats(globalData);
+            } else if (response && Array.isArray(response)) {
+                globalData = response;
+                populateRtFilter(globalData);
+                renderTable(globalData);
+                calculateStats(globalData);
             } else {
-                alert("Gagal memuat data: " + response.message);
+                alert("Gagal memuat data dari server Google Sheets.");
             }
 
             $('#loading').hide();
