@@ -463,7 +463,7 @@
             alert('Anda telah logout.');
         }
 
-        // Pengambilan data via JSONP (Penembus CORS Redirect)
+        // Pengambilan data via JSONP (Penembus CORS Redirect Google)
         function loadData() {
             $('#loading').show();
             $('#tableContainer').hide();
@@ -478,7 +478,7 @@
                     $('#loading').hide();
                     $('#tableContainer').show();
                 } else {
-                    $('#loadingText').text('Gagal memuat data. Pastikan struktur kolom Google Sheets sudah sesuai.');
+                    $('#loadingText').text('Gagal memuat data. Periksa struktur kolom/sheet Google Sheets Anda.');
                     console.error("Response Error:", response);
                 }
             };
