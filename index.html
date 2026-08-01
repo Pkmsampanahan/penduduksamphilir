@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem Informasi Data Penduduk 2026</title>
     
+    <!-- CSS Dependencies -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css" rel="stylesheet">
@@ -27,7 +28,6 @@
             <a class="navbar-brand fw-bold" href="#"><i class="fa-solid fa-hospital-user me-2"></i>Data Penduduk 2026</a>
             
             <div class="d-flex align-items-center gap-2">
-                <!-- User Info & Action Buttons -->
                 <div id="userNavArea" class="d-flex align-items-center gap-2">
                     <button class="btn btn-outline-light btn-sm" data-bs-toggle="modal" data-bs-target="#loginModal">
                         <i class="fa-solid fa-right-to-bracket me-1"></i> Login Petugas
@@ -350,12 +350,12 @@
             updateUserUI();
             loadData();
 
-            // Submit Login
+            // Submit Form Login
             $('#loginForm').on('submit', async function(e) {
                 e.preventDefault();
                 let user = $('#loginUser').val();
                 let pass = $('#loginPass').val();
-                $('#btnLoginSubmit').prop('disabled', true).text('Loading...');
+                $('#btnLoginSubmit').prop('disabled', true).text('Memproses...');
 
                 let res = await DB.login(user, pass);
                 if (res.status === 'success') {
@@ -371,7 +371,7 @@
                 $('#btnLoginSubmit').prop('disabled', false).text('Login');
             });
 
-            // Submit Register
+            // Submit Form Register
             $('#registerForm').on('submit', async function(e) {
                 e.preventDefault();
                 let nama = $('#regNama').val();
@@ -391,7 +391,7 @@
                 $('#btnRegSubmit').prop('disabled', false).text('Daftar Akun');
             });
 
-            // Submit Tambah Penduduk
+            // Submit Form Tambah Penduduk
             $('#addPendudukForm').on('submit', async function(e) {
                 e.preventDefault();
                 if (!currentUser) {
@@ -401,7 +401,7 @@
                 $('#btnSubmitAdd').prop('disabled', true).text('Menyimpan...');
 
                 let formData = $('#addPendudukForm').serialize();
-                let res = await DB.addData(formData);
+                await DB.addData(formData);
 
                 alert('Data penduduk berhasil disimpan!');
                 $('#addModal').modal('hide');
