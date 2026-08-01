@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Informasi Data Penduduk 2026</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .stat-card { border: none; border-radius: 12px; transition: all 0.2s; cursor: pointer; }
+        .stat-card:hover { transform: translateY(-4px); box-shadow: 0 6px 15px rgba(0,0,0,0.1); }
+        .filter-btn { border-radius: 20px; font-weight: 500; }
+        .badge-custom { font-size: 0.8em; padding: 5px 8px; }
+        .form-label { font-weight: 600; font-size: 0.88rem; }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm mb-4">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand fw-bold" href="#"><i class="fa-solid fa-hospital-user me-2"></i>Data Penduduk 2026</a>
+            
+            <div class="d-flex align-items-center gap-2">
+                <!-- User Info & Action Buttons -->
+                <div id="userNavArea" class="d-flex align-items-center gap-2">
+                    <button class="btn btn-outline-light btn-sm" data-bs-toggle="modal" data-bs-target="#loginModal">
+                        <i class="fa-solid fa-right-to-bracket me-1"></i> Login Petugas
+                    </button>
+                </div>
+                <button class="btn btn-outline-light btn-sm" onclick="loadData()">
+                    <i class="fa-solid fa-sync me-1"></i> Sync
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid px-4 mb-5">
+
+        <!-- Stat Summary Cards -->
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-4 col-xl-2">
+                <div class="card p-3 stat-card bg-white border-start border-primary border-4" onclick="filterCategory('ALL')">
+                    <div class="text-muted small">Total Penduduk</div>
+                    <div class="h3 fw-bold mb-0 text-primary" id="statTotal">0</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4 col-xl-2">
+                <div class="card p-3 stat-card bg-white border-start border-danger border-4" onclick="filterCategory('Bumil')">
+                    <div class="text-muted small">Ibu Hamil</div>
+                    <div class="h3 fw-bold mb-0 text-danger" id="statBumil">0</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4 col-xl-2">
+                <div class="card p-3 stat-card bg-white border-start border-warning border-4" onclick="filterCategory('Balita')">
+                    <div class="text-muted small">Bayi / Balita</div>
+                    <div class="h3 fw-bold mb-0 text-warning" id="statBalita">0</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4 col-xl-2">
+                <div class="card p-3 stat-card bg-white border-start border-info border-4" onclick="filterCategory('Lansia')">
+                    <div class="text-muted small">Lansia (>60 Thn)</div>
+                    <div class="h3 fw-bold mb-0 text-info" id="statLansia">0</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4 col-xl-2">
+                <div class="card p-3 stat-card bg-white border-start border-success border-4" onclick="filterCategory('PUS')">
+                    <div class="text-muted small">PUS / WUS</div>
+                    <div class="h3 fw-bold mb-0 text-success" id="statPusWus">0 / 0</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4 col-xl-2">
+                <div class="card p-3 stat-card bg-white border-start border-secondary border-4" onclick="filterCategory('KB')">
+                    <div class="text-muted small">Peserta KB</div>
+                    <div class="h3 fw-bold mb-0 text-secondary" id="statKb">0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter Controls -->
+        <div class="card p-3 bg-white mb-4 border-0 shadow-sm">
+            <div class="row g-3 align-items-center">
+                <div class="col-md-3">
+                    <label class="form-label mb-1 text-muted"><i class="fa-solid fa-house-chimney me-1"></i>Filter RT:</label>
+                    <select id="filterRtSelect" class="form-select form-select-sm" onchange="applyRtFilter()">
+                        <option value="">-- Semua RT --</option>
+                    </select>
+                </div>
+                <div class="col-md-9">
+                    <label class="form-label mb-1 text-muted"><i class="fa-solid fa-filter me-1"></i>Filter Kesehatan:</label>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button class="btn btn-sm btn-primary filter-btn active" id="btn-ALL" onclick="filterCategory('ALL', this)">Semua</button>
+                        <button class="btn btn-sm btn-outline-danger filter-btn" id="btn-Bumil" onclick="filterCategory('Bumil', this)">Ibu Hamil</button>
+                        <button class="btn btn-sm btn-outline-warning filter-btn" id="btn-Balita" onclick="filterCategory('Balita', this)">Balita</button>
+                        <button class="btn btn-sm btn-outline-info filter-btn" id="btn-Lansia" onclick="filterCategory('Lansia', this)">Lansia</button>
+                        <button class="btn btn-sm btn-outline-success filter-btn" id="btn-PUS" onclick="filterCategory('PUS', this)">PUS / WUS</button>
+                        <button class="btn btn-sm btn-outline-secondary filter-btn" id="btn-Remaja" onclick="filterCategory('Remaja', this)">Remaja</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Data Table -->
+        <div class="card p-4 bg-white border-0 shadow-sm">
+            <div id="loading" class="text-center py-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-2 text-muted">Sinkronisasi data dari Google Sheets...</p>
+            </div>
+
+            <div class="table-responsive" id="tableContainer" style="display: none;">
+                <table id="pendudukTable" class="table table-hover align-middle w-100">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>No</th>
+                            <th>RT/RW</th>
+                            <th>No. KK</th>
+                            <th>NIK</th>
+                            <th>Nama</th>
+                            <th>JK</th>
+                            <th>Usia</th>
+                            <th>Hubungan</th>
+                            <th>Status KB</th>
+                            <th>Kategori Kesehatan</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Login -->
+    <div class="modal fade" id="loginModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="fa-solid fa-lock me-2"></i>Login Petugas</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form id="loginForm">
+                        <div class="mb-3">
+                            <label class="form-label">Username</label>
+                            <input type="text" class="form-control" id="loginUser" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Password</label>
+                            <input type="password" class="form-control" id="loginPass" required>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <a href="#" class="small text-decoration-none" data-bs-toggle="modal" data-bs-target="#registerModal">Belum punya akun? Daftar</a>
+                            <button type="submit" class="btn btn-primary" id="btnLoginSubmit">Login</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Register -->
+    <div class="modal fade" id="registerModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title"><i class="fa-solid fa-user-plus me-2"></i>Daftar Akun Petugas</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form id="registerForm">
+                        <div class="mb-3">
+                            <label class="form-label">Nama Lengkap</label>
+                            <input type="text" class="form-control" id="regNama" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Username</label>
+                            <input type="text" class="form-control" id="regUser" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Password</label>
+                            <input type="password" class="form-control" id="regPass" required>
+                        </div>
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-success" id="btnRegSubmit">Daftar Akun</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Form Tambah Data Penduduk -->
+    <div class="modal fade" id="addModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="fa-solid fa-user-plus me-2"></i>Tambah Data Penduduk Baru</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <form id="addPendudukForm">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">RT / RW *</label>
+                                <input type="text" class="form-control" name="rt_rw" placeholder="001/001" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">No. KK *</label>
+                                <input type="text" class="form-control" name="no_kk" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">NIK *</label>
+                                <input type="text" class="form-control" name="nik" required>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Nama Anggota Keluarga *</label>
+                                <input type="text" class="form-control" name="nama" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">JK *</label>
+                                <select class="form-select" name="jk" required>
+                                    <option value="L">Laki-Laki (L)</option>
+                                    <option value="P">Perempuan (P)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Hubungan *</label>
+                                <select class="form-select" name="hubungan" required>
+                                    <option value="KK">Kepala Keluarga</option>
+                                    <option value="ISTRI">Istri</option>
+                                    <option value="ANAK">Anak</option>
+                                    <option value="SAUDARA">Saudara</option>
+                                    <option value="ORANG TUA">Orang Tua</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Tempat Lahir</label>
+                                <input type="text" class="form-control" name="tempat_lahir">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Tanggal Lahir</label>
+                                <input type="date" class="form-control" name="tgl_lahir">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Usia</label>
+                                <input type="text" class="form-control" name="usia" placeholder="34 / 5Bulan">
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Status Perkawinan</label>
+                                <select class="form-select" name="status">
+                                    <option value="KAWIN">KAWIN</option>
+                                    <option value="BELUM KAWIN">BELUM KAWIN</option>
+                                    <option value="DUDA">DUDA</option>
+                                    <option value="JANDA">JANDA</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Agama</label>
+                                <input type="text" class="form-control" name="agama" value="ISLAM">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Pendidikan</label>
+                                <input type="text" class="form-control" name="pendidikan">
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Pekerjaan</label>
+                                <input type="text" class="form-control" name="pekerjaan">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Metode KB</label>
+                                <input type="text" class="form-control" name="kb">
+                            </div>
+                        </div>
+
+                        <hr>
+                        <h6 class="fw-bold mb-3 text-secondary">Kategori Kesehatan / Sasaran Khusus:</h6>
+                        
+                        <div class="row g-2">
+                            <div class="col-6 col-md-3"><div class="form-check"><input class="form-check-input" type="checkbox" name="pus" value="1" id="chkPus"><label class="form-check-label" for="chkPus">PUS</label></div></div>
+                            <div class="col-6 col-md-3"><div class="form-check"><input class="form-check-input" type="checkbox" name="wus" value="1" id="chkWus"><label class="form-check-label" for="chkWus">WUS</label></div></div>
+                            <div class="col-6 col-md-3"><div class="form-check"><input class="form-check-input" type="checkbox" name="ibu_hamil" value="1" id="chkBumil"><label class="form-check-label" for="chkBumil">Ibu Hamil</label></div></div>
+                            <div class="col-6 col-md-3"><div class="form-check"><input class="form-check-input" type="checkbox" name="bayi" value="1" id="chkBayi"><label class="form-check-label" for="chkBayi">Bayi</label></div></div>
+                            <div class="col-6 col-md-3"><div class="form-check"><input class="form-check-input" type="checkbox" name="balita" value="1" id="chkBalita"><label class="form-check-label" for="chkBalita">Balita</label></div></div>
+                            <div class="col-6 col-md-3"><div class="form-check"><input class="form-check-input" type="checkbox" name="pralansia" value="1" id="chkPralansia"><label class="form-check-label" for="chkPralansia">Pralansia (45-60)</label></div></div>
+                            <div class="col-6 col-md-3"><div class="form-check"><input class="form-check-input" type="checkbox" name="lansia" value="1" id="chkLansia"><label class="form-check-label" for="chkLansia">Lansia (>60)</label></div></div>
+                            <div class="col-6 col-md-3"><div class="form-check"><input class="form-check-input" type="checkbox" name="remaja" value="1" id="chkRemaja"><label class="form-check-label" for="chkRemaja">Remaja</label></div></div>
+                        </div>
+
+                        <div class="mt-4 text-end">
+                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
+                            <button type="submit" class="btn btn-primary" id="btnSubmitAdd">Simpan Data</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Detail Anggota Keluarga -->
+    <div class="modal fade" id="detailModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="modalNama">Detail Penduduk</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="modalBody"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JS Dependencies -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.bootstrap5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+
+    <!-- DB Handler Script -->
+    <script src="db.js"></script>
+
+    <script>
+        let globalData = [];
+        let dataTableInstance = null;
+        let currentUser = JSON.parse(localStorage.getItem('userSession')) || null;
+
+        $(document).ready(function() {
+            updateUserUI();
+            loadData();
+
+            // Submit Login
+            $('#loginForm').on('submit', async function(e) {
+                e.preventDefault();
+                let user = $('#loginUser').val();
+                let pass = $('#loginPass').val();
+                $('#btnLoginSubmit').prop('disabled', true).text('Loading...');
+
+                let res = await DB.login(user, pass);
+                if (res.status === 'success') {
+                    currentUser = res.user;
+                    localStorage.setItem('userSession', JSON.stringify(currentUser));
+                    updateUserUI();
+                    $('#loginModal').modal('hide');
+                    $('#loginForm')[0].reset();
+                    alert('Login berhasil! Selamat datang ' + currentUser.nama);
+                } else {
+                    alert(res.message);
+                }
+                $('#btnLoginSubmit').prop('disabled', false).text('Login');
+            });
+
+            // Submit Register
+            $('#registerForm').on('submit', async function(e) {
+                e.preventDefault();
+                let nama = $('#regNama').val();
+                let user = $('#regUser').val();
+                let pass = $('#regPass').val();
+                $('#btnRegSubmit').prop('disabled', true).text('Memproses...');
+
+                let res = await DB.register(user, pass, nama);
+                if (res.status === 'success') {
+                    alert(res.message);
+                    $('#registerModal').modal('hide');
+                    $('#registerForm')[0].reset();
+                    $('#loginModal').modal('show');
+                } else {
+                    alert(res.message);
+                }
+                $('#btnRegSubmit').prop('disabled', false).text('Daftar Akun');
+            });
+
+            // Submit Tambah Penduduk
+            $('#addPendudukForm').on('submit', async function(e) {
+                e.preventDefault();
+                if (!currentUser) {
+                    alert('Anda harus login terlebih dahulu!');
+                    return;
+                }
+                $('#btnSubmitAdd').prop('disabled', true).text('Menyimpan...');
+
+                let formData = $('#addPendudukForm').serialize();
+                let res = await DB.addData(formData);
+
+                alert('Data penduduk berhasil disimpan!');
+                $('#addModal').modal('hide');
+                $('#addPendudukForm')[0].reset();
+                loadData();
+
+                $('#btnSubmitAdd').prop('disabled', false).text('Simpan Data');
+            });
+        });
+
+        function updateUserUI() {
+            let container = $('#userNavArea');
+            container.empty();
+
+            if (currentUser) {
+                container.append(`
+                    <span class="text-white small me-1"><i class="fa-solid fa-user-check me-1"></i>${currentUser.nama}</span>
+                    <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#addModal">
+                        <i class="fa-solid fa-user-plus me-1"></i> Tambah Penduduk
+                    </button>
+                    <button class="btn btn-danger btn-sm" onclick="logout()">
+                        <i class="fa-solid fa-right-from-bracket"></i> Logout
+                    </button>
+                `);
+            } else {
+                container.append(`
+                    <button class="btn btn-outline-light btn-sm" data-bs-toggle="modal" data-bs-target="#loginModal">
+                        <i class="fa-solid fa-right-to-bracket me-1"></i> Login Petugas
+                    </button>
+                `);
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            localStorage.removeItem('userSession');
+            updateUserUI();
+            alert('Anda telah logout.');
+        }
+
+        async function loadData() {
+            $('#loading').show();
+            $('#tableContainer').hide();
+
+            const response = await DB.getData();
+
+            if (response.status === "success") {
+                globalData = response.data;
+                populateRtFilter(globalData);
+                renderTable(globalData);
+                calculateStats(globalData);
+            } else {
+                alert("Gagal memuat data: " + response.message);
+            }
+
+            $('#loading').hide();
+            $('#tableContainer').show();
+        }
+
+        function populateRtFilter(data) {
+            let rtSet = new Set();
+            data.forEach(item => {
+                if (item.rt_rw && item.rt_rw.trim() !== '') {
+                    rtSet.add(item.rt_rw.trim());
+                }
+            });
+
+            let rtArray = Array.from(rtSet).sort();
+            let select = $('#filterRtSelect');
+            select.find('option:gt(0)').remove();
+
+            rtArray.forEach(rt => {
+                select.append(`<option value="${rt}">RT ${rt}</option>`);
+            });
+        }
+
+        function renderTable(data) {
+            if (dataTableInstance) {
+                dataTableInstance.destroy();
+            }
+
+            let tbody = $('#pendudukTable tbody');
+            tbody.empty();
+
+            data.forEach((item, idx) => {
+                let categories = getHealthCategories(item);
+
+                let row = `
+                    <tr>
+                        <td>${idx + 1}</td>
+                        <td><span class="badge bg-secondary">${item.rt_rw || '-'}</span></td>
+                        <td>${item.no_kk || '-'}</td>
+                        <td>${item.nik || '-'}</td>
+                        <td class="fw-bold">${item.nama}</td>
+                        <td>${item.jk === 'L' ? '<span class="badge bg-primary">L</span>' : '<span class="badge bg-danger">P</span>'}</td>
+                        <td>${item.usia || '-'}</td>
+                        <td>${item.hubungan || '-'}</td>
+                        <td>${item.kb ? '<span class="badge bg-success">'+item.kb+'</span>' : '-'}</td>
+                        <td>${categories}</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="showDetail(${idx})">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                tbody.append(row);
+            });
+
+            dataTableInstance = $('#pendudukTable').DataTable({
+                responsive: true,
+                dom: '<"d-flex justify-content-between align-items-center mb-3"Bf>rt<"d-flex justify-content-between align-items-center mt-3"lip>',
+                buttons: [
+                    { extend: 'excelHtml5', className: 'btn btn-sm btn-success', text: '<i class="fa-solid fa-file-excel me-1"></i> Excel' },
+                    { extend: 'pdfHtml5', className: 'btn btn-sm btn-danger', text: '<i class="fa-solid fa-file-pdf me-1"></i> PDF' }
+                ],
+                language: {
+                    search: "_INPUT_",
+                    searchPlaceholder: "Cari NIK, Nama...",
+                    lengthMenu: "Tampilkan _MENU_ baris"
+                }
+            });
+        }
+
+        function getHealthCategories(item) {
+            let badges = '';
+            if (item.ibu_hamil == '1' || item.ibu_hamil == 1) badges += '<span class="badge bg-danger badge-custom me-1">Bumil</span>';
+            if (item.bayi == '1' || item.balita == '1' || item.bayi == 1 || item.balita == 1) badges += '<span class="badge bg-warning text-dark badge-custom me-1">Balita</span>';
+            if (item.lansia == '1' || item.lansia == 1) badges += '<span class="badge bg-info text-dark badge-custom me-1">Lansia</span>';
+            if (item.pus == '1' || item.pus == 1) badges += '<span class="badge bg-success badge-custom me-1">PUS</span>';
+            if (item.wus == '1' || item.wus == 1) badges += '<span class="badge bg-primary badge-custom me-1">WUS</span>';
+            if (item.remaja == '1' || item.remaja == 1) badges += '<span class="badge bg-secondary badge-custom me-1">Remaja</span>';
+            return badges || '-';
+        }
+
+        function calculateStats(data) {
+            let total = data.length;
+            let bumil = data.filter(d => d.ibu_hamil == 1 || d.ibu_hamil == '1').length;
+            let balita = data.filter(d => d.bayi == 1 || d.balita == 1 || d.bayi == '1' || d.balita == '1').length;
+            let lansia = data.filter(d => d.lansia == 1 || d.lansia == '1').length;
+            let pus = data.filter(d => d.pus == 1 || d.pus == '1').length;
+            let wus = data.filter(d => d.wus == 1 || d.wus == '1').length;
+            let kb = data.filter(d => d.kb && d.kb.toString().trim() !== '' && d.kb !== '-').length;
+
+            $('#statTotal').text(total);
+            $('#statBumil').text(bumil);
+            $('#statBalita').text(balita);
+            $('#statLansia').text(lansia);
+            $('#statPusWus').text(`${pus} / ${wus}`);
+            $('#statKb').text(kb);
+        }
+
+        function applyRtFilter() {
+            let selectedRt = $('#filterRtSelect').val();
+            if (selectedRt === '') {
+                dataTableInstance.column(1).search('').draw();
+            } else {
+                dataTableInstance.column(1).search('^' + selectedRt + '$', true, false).draw();
+            }
+        }
+
+        function filterCategory(cat, btn) {
+            $('.filter-btn').removeClass('active btn-primary btn-danger btn-warning btn-info btn-success btn-secondary')
+                             .addClass('btn-outline-secondary');
+            
+            if (btn) {
+                $(btn).removeClass('btn-outline-secondary').addClass('active btn-primary');
+            } else {
+                $(`#btn-${cat}`).removeClass('btn-outline-secondary').addClass('active btn-primary');
+            }
+
+            if (cat === 'ALL') {
+                dataTableInstance.search('').draw();
+            } else {
+                dataTableInstance.search(cat).draw();
+            }
+        }
+
+        function showDetail(index) {
+            let item = globalData[index];
+            $('#modalNama').text(item.nama);
+
+            let categories = getHealthCategories(item);
+
+            let content = `
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item"><strong>NIK:</strong> ${item.nik || '-'}</li>
+                            <li class="list-group-item"><strong>No. KK:</strong> ${item.no_kk || '-'}</li>
+                            <li class="list-group-item"><strong>RT/RW:</strong> ${item.rt_rw || '-'}</li>
+                            <li class="list-group-item"><strong>Jenis Kelamin:</strong> ${item.jk === 'L' ? 'Laki-Laki' : 'Perempuan'}</li>
+                            <li class="list-group-item"><strong>Tempat/Tgl Lahir:</strong> ${item.tempat_lahir || '-'}, ${item.tgl_lahir || '-'}</li>
+                            <li class="list-group-item"><strong>Usia:</strong> ${item.usia || '-'}</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item"><strong>Hubungan:</strong> ${item.hubungan || '-'}</li>
+                            <li class="list-group-item"><strong>Status:</strong> ${item.status || '-'}</li>
+                            <li class="list-group-item"><strong>Pendidikan:</strong> ${item.pendidikan || '-'}</li>
+                            <li class="list-group-item"><strong>Pekerjaan:</strong> ${item.pekerjaan || '-'}</li>
+                            <li class="list-group-item"><strong>KB:</strong> ${item.kb || 'Tidak/Belum'}</li>
+                            <li class="list-group-item"><strong>Agama:</strong> ${item.agama || '-'}</li>
+                            <li class="list-group-item"><strong>Sasaran Khusus:</strong> ${categories}</li>
+                        </ul>
+                    </div>
+                </div>
+            `;
+            $('#modalBody').html(content);
+            let detailModal = new bootstrap.Modal(document.getElementById('detailModal'));
+            detailModal.show();
+        }
+    </script>
+</body>
+</html>
