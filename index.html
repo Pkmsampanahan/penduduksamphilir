@@ -463,23 +463,30 @@
             alert('Anda telah logout.');
         }
 
-        // Pengambilan data via JSONP (Penembus CORS Redirect Google)
+        // FUNGSI LOAD DATA HYBRID (JSONP + DIRECT FETCH FALLBACK)
         function loadData() {
             $('#loading').show();
             $('#tableContainer').hide();
-            $('#loadingText').text('Menghubungkan ke Google Sheets...');
+            $('#loadingText').html('Menghubungkan ke Google Sheets...<br><small class="text-muted">Proses ini membutuhkan waktu beberapa detik.</small>');
 
+            let isLoaded = false;
+
+            // Timeout fallback 5 detik jika script JSONP lambat/terhalang
+            const fetchTimeout = setTimeout(() => {
+                if (!isLoaded) {
+                    console.warn("JSONP lambat, beralih ke Direct Fetch...");
+                    tryFetchDirect();
+                }
+            }, 5000);
+
+            // 1. CARA UTAMA: JSONP
             window.handleGasResponse = function(response) {
+                isLoaded = true;
+                clearTimeout(fetchTimeout);
                 if (response && response.status === "success" && Array.isArray(response.data)) {
-                    globalData = response.data;
-                    populateRtFilter(globalData);
-                    renderTable(globalData);
-                    calculateStats(globalData);
-                    $('#loading').hide();
-                    $('#tableContainer').show();
+                    processAndRender(response.data);
                 } else {
-                    $('#loadingText').text('Gagal memuat data. Periksa struktur kolom/sheet Google Sheets Anda.');
-                    console.error("Response Error:", response);
+                    $('#loadingText').html('<span class="text-warning"><i class="fa-solid fa-triangle-exclamation me-1"></i> Gagal memuat data. Periksa Google Sheets Anda.</span><br><button class="btn btn-sm btn-outline-primary mt-2" onclick="loadData()">Coba Lagi</button>');
                 }
             };
 
@@ -488,11 +495,38 @@
 
             const script = document.createElement('script');
             script.id = 'gas-script';
-            script.src = GAS_WEB_APP_URL + "?action=getData&callback=handleGasResponse";
+            script.src = GAS_WEB_APP_URL + "?action=getData&callback=handleGasResponse&_t=" + new Date().getTime();
             script.onerror = function() {
-                $('#loadingText').text('Gagal terhubung ke Google Apps Script.');
+                if (!isLoaded) {
+                    console.warn("Script tag error, mencoba Direct Fetch...");
+                    tryFetchDirect();
+                }
             };
             document.body.appendChild(script);
+        }
+
+        // 2. CARA CADANGAN: Direct Fetch
+        async function tryFetchDirect() {
+            try {
+                const res = await fetch(GAS_WEB_APP_URL + "?action=getData", { method: "GET", redirect: "follow" });
+                const response = await res.json();
+                if (response && response.status === "success" && Array.isArray(response.data)) {
+                    processAndRender(response.data);
+                    return;
+                }
+            } catch(e) {
+                console.error("Direct Fetch gagal:", e);
+            }
+            $('#loadingText').html('<span class="text-danger"><i class="fa-solid fa-circle-xmark me-1"></i> Gagal terhubung ke server.</span><br><button class="btn btn-sm btn-primary mt-2" onclick="loadData()">Muat Ulang Data</button>');
+        }
+
+        function processAndRender(data) {
+            globalData = data;
+            populateRtFilter(globalData);
+            renderTable(globalData);
+            calculateStats(globalData);
+            $('#loading').hide();
+            $('#tableContainer').show();
         }
 
         function populateRtFilter(data) {
