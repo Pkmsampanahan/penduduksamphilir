@@ -339,26 +339,31 @@
     <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
 
     <script>
-        // -------------------------------------------------------------------
-        // URL DEPLOYMENT GOOGLE APPS SCRIPT BARU
-        // -------------------------------------------------------------------
         const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxGUUoULj0XwyNWgU7NZD_wh3A_LwQzlhejmeJK0Y9CV4x6wmrL-5PtI0LTbsx8uWZ_aw/exec";
 
         let globalData = [];
         let dataTableInstance = null;
         let currentUser = JSON.parse(localStorage.getItem('userSession')) || null;
 
-        // API Connector
+        // DB Helper dengan Hybrid Fetch (Direct + JSONP Fallback)
         const DB = {
-            getData() {
+            async getData() {
+                try {
+                    const res = await fetch(GAS_WEB_APP_URL + "?action=getData");
+                    const json = await res.json();
+                    if (json && json.status === "success") return json;
+                } catch (e) {
+                    console.warn("Direct fetch failed, switching to JSONP...", e);
+                }
+
                 return new Promise((resolve) => {
                     $.ajax({
                         url: GAS_WEB_APP_URL + "?action=getData",
                         dataType: "jsonp",
-                        timeout: 15000,
+                        timeout: 12000,
                         success: function(response) { resolve(response); },
                         error: function(xhr, status, error) {
-                            console.error("AJAX Error:", error);
+                            console.error("AJAX JSONP Error:", error);
                             resolve({ status: "error", message: "Koneksi ke Google Sheets terputus." });
                         }
                     });
