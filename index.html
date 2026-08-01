@@ -463,33 +463,12 @@
             alert('Anda telah logout.');
         }
 
-        async function loadData() {
+        // Pengambilan data via JSONP (Penembus CORS Redirect)
+        function loadData() {
             $('#loading').show();
             $('#tableContainer').hide();
             $('#loadingText').text('Menghubungkan ke Google Sheets...');
 
-            try {
-                // Trik Penembus CORS Google Redirect
-                const res = await fetch(GAS_WEB_APP_URL + "?action=getData", {
-                    method: "GET",
-                    redirect: "follow"
-                });
-                const response = await res.json();
-
-                if (response && response.status === "success" && Array.isArray(response.data)) {
-                    globalData = response.data;
-                    populateRtFilter(globalData);
-                    renderTable(globalData);
-                    calculateStats(globalData);
-                    $('#loading').hide();
-                    $('#tableContainer').show();
-                    return;
-                }
-            } catch (e) {
-                console.warn("Direct fetch error, fallback to script tag...", e);
-            }
-
-            // Fallback via Script Tag JSONP jika Fetch terhalang
             window.handleGasResponse = function(response) {
                 if (response && response.status === "success" && Array.isArray(response.data)) {
                     globalData = response.data;
@@ -499,12 +478,20 @@
                     $('#loading').hide();
                     $('#tableContainer').show();
                 } else {
-                    $('#loadingText').text('Gagal memuat data dari Google Sheets.');
+                    $('#loadingText').text('Gagal memuat data. Pastikan struktur kolom Google Sheets sudah sesuai.');
+                    console.error("Response Error:", response);
                 }
             };
 
+            const oldScript = document.getElementById('gas-script');
+            if (oldScript) oldScript.remove();
+
             const script = document.createElement('script');
+            script.id = 'gas-script';
             script.src = GAS_WEB_APP_URL + "?action=getData&callback=handleGasResponse";
+            script.onerror = function() {
+                $('#loadingText').text('Gagal terhubung ke Google Apps Script.');
+            };
             document.body.appendChild(script);
         }
 
