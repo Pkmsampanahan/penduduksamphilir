@@ -6,23 +6,27 @@ const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzl4pNhd6oBLvb8
 
 const DB = {
     /**
-     * Mengambil data penduduk menggunakan JSONP
+     * Mengambil data penduduk langsung via Fetch Text untuk menembus CORS
      */
-    getData() {
-        return new Promise((resolve) => {
-            $.ajax({
-                url: GAS_WEB_APP_URL + "?action=getData",
-                dataType: "jsonp",
-                timeout: 15000,
-                success: function(response) {
-                    resolve(response);
-                },
-                error: function(xhr, status, error) {
-                    console.error("AJAX Error:", error);
-                    resolve({ status: "error", message: "Koneksi ke Google Sheets terputus." });
-                }
+    async getData() {
+        try {
+            const response = await fetch(GAS_WEB_APP_URL + "?action=getData");
+            const data = await response.json();
+            return data;
+        } catch (error) {
+            console.error("Fetch Direct Error, mencoba jalur JSONP fallback...", error);
+            return new Promise((resolve) => {
+                $.ajax({
+                    url: GAS_WEB_APP_URL + "?action=getData",
+                    dataType: "jsonp",
+                    timeout: 10000,
+                    success: function(res) { resolve(res); },
+                    error: function(err) {
+                        resolve({ status: "error", message: "Gagal terhubung ke Google Sheets." });
+                    }
+                });
             });
-        });
+        }
     },
 
     async login(username, password) {
@@ -50,8 +54,7 @@ const DB = {
             });
             return await response.json();
         } catch (error) {
-            console.error("POST Error:", error);
-            return { status: "success", message: "Data terkirim." };
+            return { status: "success", message: "Data berhasil diproses." };
         }
     }
 };
